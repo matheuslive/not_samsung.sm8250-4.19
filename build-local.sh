@@ -82,7 +82,7 @@ case "$add_choice" in
         ZIPNAME="not-ksu-$ZIPNAME"
         EXTRA_CONFIG="vendor/not/ksu.config vendor/not/localversion.config"
         ;;
-    ksu)
+    ksu+permissive)
         ZIPNAME="not-ksu-permissive-$ZIPNAME"
         EXTRA_CONFIG="vendor/not/ksu.config vendor/not/localversion.config vendor/not/permissive.config"
         ;;
@@ -134,6 +134,29 @@ if ! [ -d "$TC_DIR" ]; then
     fi
 
     echo -e "${GREEN}Clang ready!${NC}"
+fi
+
+# Neutron clang is linked against a recent glibc (2.38+). On older distros
+# (Debian 12 ships 2.36) every HOSTCC dies with "GLIBC_2.xx not found".
+# AntMan's glibc patch bundles a private glibc and patchelf's the binaries.
+if ! "$TC_DIR/bin/clang" --version >/dev/null 2>&1; then
+    echo -e "${YELLOW}Clang unusable on this glibc, applying AntMan glibc patch...${NC}"
+    curl -fsSL -o "$TC_DIR/antman" \
+        https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman || exit 1
+    (cd "$TC_DIR" && bash ./antman --patch=glibc) || exit 1
+
+    if ! "$TC_DIR/bin/clang" --version >/dev/null 2>&1; then
+        echo -e "${RED}Clang still unusable after the glibc patch!${NC}"
+        exit 1
+    fi
+fi
+
+# Kconfig probes the GNU cross compiler even though the build itself is LLVM,
+# so scripts/Kconfig.include aborts the defconfig step without it.
+if ! command -v aarch64-linux-gnu-gcc >/dev/null 2>&1; then
+    echo -e "${RED}aarch64-linux-gnu-gcc not found!${NC}"
+    echo -e "${YELLOW}Install it first: sudo apt-get install -y gcc-aarch64-linux-gnu${NC}"
+    exit 1
 fi
 
 mkdir -p out
