@@ -70,7 +70,7 @@ PROJECT_CONFIG="vendor/samsung/${MODEL}.config"
 
 ZIPNAME="$(date '+%Y%m%d').zip"
 PLATFORM_DEFCONFIG="vendor/kona-perf_defconfig"
-COMMON_DEFCONFIG="vendor/samsung/kona-sec-common.config"
+COMMON_DEFCONFIG="vendor/samsung/kona-sec-common.config vendor/not/tracing.config"
 
 # Additionals configurations switch
 case "$add_choice" in
